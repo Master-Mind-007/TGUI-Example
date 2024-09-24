@@ -1,4 +1,4 @@
-   name: Build, Push, and Run Docker Image
+   name: Build, Push, and Run Docker Image with ngrok
 
    on:
      push:
@@ -41,15 +41,26 @@
            run: |
              docker run -d -p 3000:3000 --name tgui-example ghcr.io/${{ env.REPO_OWNER_LOWER }}/tgui-example:latest
 
-         - name: Wait for container to be ready
+         - name: Install ngrok
            run: |
-             sleep 10
+             sudo apt-get update
+             sudo apt-get install -y unzip
+             curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+             echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+             sudo apt-get update && sudo apt-get install ngrok
 
-         - name: Test the running container
+         - name: Start ngrok
            run: |
-             curl -f http://localhost:3000 || (docker logs tgui-example && exit 1)
+             ngrok http 3000 &
 
-         - name: Stop and remove Docker container
+         - name: Display ngrok URL
+           id: ngrok
            run: |
-             docker stop tgui-example
-             docker rm tgui-example
+             sleep 5
+             NGROK_URL=$(curl --silent http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url')
+             echo "NGROK_URL=${NGROK_URL}" >> $GITHUB_ENV
+             echo "ngrok URL: ${NGROK_URL}"
+
+         - name: Keep the container running
+           run: |
+             while true; do sleep 1000; done
