@@ -26,16 +26,20 @@
              username: ${{ github.repository_owner }}
              password: ${{ secrets.GITHUB_TOKEN }}
 
+         - name: Set lowercase repository owner
+           id: vars
+           run: echo "REPO_OWNER_LOWER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
          - name: Build and push Docker image
            uses: docker/build-push-action@v2
            with:
              context: .
              push: true
-             tags: ghcr.io/${{ github.repository_owner.toLowerCase() }}/tgui-example:latest
+             tags: ghcr.io/${{ env.REPO_OWNER_LOWER }}/tgui-example:latest
 
          - name: Run Docker container
            run: |
-             docker run -d -p 3000:3000 --name tgui-example ghcr.io/${{ github.repository_owner.toLowerCase() }}/tgui-example:latest
+             docker run -d -p 3000:3000 --name tgui-example ghcr.io/${{ env.REPO_OWNER_LOWER }}/tgui-example:latest
 
          - name: Wait for container to be ready
            run: |
